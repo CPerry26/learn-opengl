@@ -108,14 +108,26 @@ int main() {
     //     0.0f, 0.5f, 0.0f,
     // };
 
-    constexpr float twoVerts[] = {
+    constexpr float verts[] = {
         -0.75f, -0.75f, 0.0f,
         0.0f, -0.75f, 0.0f,
         -0.37f, 0.25f, 0.0f,
+    };
+
+    constexpr float verts2[] = {
         0.0f, -0.75f, 0.0f,
         0.75f, -0.75f, 0.0f,
         0.37f, 0.25f, 0.0f,
     };
+
+    // constexpr float twoVerts[] = {
+    //     -0.75f, -0.75f, 0.0f,
+    //     0.0f, -0.75f, 0.0f,
+    //     -0.37f, 0.25f, 0.0f,
+    //     0.0f, -0.75f, 0.0f,
+    //     0.75f, -0.75f, 0.0f,
+    //     0.37f, 0.25f, 0.0f,
+    // };
 
     // constexpr float vertices[] = {
     //     0.5f, 0.5f, 0.0f,
@@ -131,17 +143,17 @@ int main() {
 
     // VAOs allow us to bind vertex and attributes to be reused
     // You bind the VAO, do all your vertex work, and rebind when you want to use it
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    unsigned int vao[2];
+    unsigned int vbo[2];
+    glGenVertexArrays(2, vao);
+    glGenBuffers(2, vbo);
 
     // Generate 1 vertex buffer and bind it to the array buffer
-    unsigned int vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindVertexArray(vao[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 
     // Pass the triangle vertices to the array buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(twoVerts), twoVerts, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 
     // Element buffers allow us to efficiently render more complex objects that have identical vertices using
     // indices. They're bound in the same way but a VAO can only have 1 EBO.
@@ -161,7 +173,15 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glBindVertexArray(vao[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts2), verts2, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void *>(nullptr));
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     // Setup render loop
     while (!glfwWindowShouldClose(window))
@@ -175,8 +195,10 @@ int main() {
 
         // Use the defined program when rendering geometry
         glUseProgram(shaderProgram);
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(vao[0]);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(vao[1]);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
 
@@ -185,8 +207,8 @@ int main() {
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
+    glDeleteVertexArrays(2, vao);
+    glDeleteBuffers(2, vbo);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
