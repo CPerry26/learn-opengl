@@ -10,21 +10,23 @@ const char* vertexShaderSource = "#version 410 core\n"
     "layout (location = 0) in vec3 pos;\n"
     "void main()\n"
     "{\n"
-    "gl_Position = vec4(pos.x, pos.y, pos.z, 1.0f);\n"
+    "gl_Position = vec4(pos, 1.0f);\n"
     "}\0";
 
 const char* fragShaderSource = "#version 410 core\n"
     "out vec4 FragColor;\n"
+    "uniform vec4 vertexColor;\n"
     "void main()\n"
     "{\n"
-    "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "FragColor = vertexColor;\n"
     "}\0";
 
 const char* fragShaderSourceYellow = "#version 410 core\n"
     "out vec4 FragColor;\n"
+    "uniform vec4 vertexColor;\n"
     "void main()\n"
     "{\n"
-    "FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
+    "FragColor = vertexColor;\n"
     "}\0";
 
 int main() {
@@ -230,12 +232,20 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        float deltaTime = glfwGetTime();
+        float orange = (sin(deltaTime) / 2.0f) + 0.25f;
+        float yellow = (sin(deltaTime) / 2.0f) + 1.0f;
+        int vertColorLoc = glGetUniformLocation(shaderProgram, "vertexColor");
+        int vertColorLocYellow = glGetUniformLocation(shaderProgramYellow, "vertexColor");
+
         // Use the defined program when rendering geometry
         glUseProgram(shaderProgram);
+        glUniform4f(vertColorLoc, 1.0f, orange, 0.2f, 1.0f);
         glBindVertexArray(vao[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glUseProgram(shaderProgramYellow);
+        glUniform4f(vertColorLocYellow, 1.0f, yellow, 0.0f, 1.0f);
         glBindVertexArray(vao[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
