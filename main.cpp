@@ -108,17 +108,26 @@ int main() {
     //     0.0f, 0.5f, 0.0f,
     // };
 
-    constexpr float vertices[] = {
-        0.5f, 0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        -0.5f, 0.5f, 0.0f
+    constexpr float twoVerts[] = {
+        -0.75f, -0.75f, 0.0f,
+        0.0f, -0.75f, 0.0f,
+        -0.37f, 0.25f, 0.0f,
+        0.0f, -0.75f, 0.0f,
+        0.75f, -0.75f, 0.0f,
+        0.37f, 0.25f, 0.0f,
     };
 
-    unsigned int indices[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
+    // constexpr float vertices[] = {
+    //     0.5f, 0.5f, 0.0f,
+    //     0.5f, -0.5f, 0.0f,
+    //     -0.5f, -0.5f, 0.0f,
+    //     -0.5f, 0.5f, 0.0f
+    // };
+    //
+    // unsigned int indices[] = {
+    //     0, 1, 3,
+    //     1, 2, 3
+    // };
 
     // VAOs allow us to bind vertex and attributes to be reused
     // You bind the VAO, do all your vertex work, and rebind when you want to use it
@@ -132,14 +141,14 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     // Pass the triangle vertices to the array buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(twoVerts), twoVerts, GL_STATIC_DRAW);
 
     // Element buffers allow us to efficiently render more complex objects that have identical vertices using
     // indices. They're bound in the same way but a VAO can only have 1 EBO.
-    unsigned int ebo;
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    // unsigned int ebo;
+    // glGenBuffers(1, &ebo);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Tell OpenGL how to interpret vertex data
     // index is 0 from the layout in the vertex shader
@@ -167,8 +176,8 @@ int main() {
         // Use the defined program when rendering geometry
         glUseProgram(shaderProgram);
         glBindVertexArray(vao);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
 
         // Poll and swap buffers for next frame
