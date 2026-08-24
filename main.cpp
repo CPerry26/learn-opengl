@@ -20,6 +20,13 @@ const char* fragShaderSource = "#version 410 core\n"
     "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\0";
 
+const char* fragShaderSourceYellow = "#version 410 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
+    "}\0";
+
 int main() {
     constexpr int width = 800;
     constexpr int height = 600;
@@ -81,6 +88,19 @@ int main() {
         return -1;
     }
 
+    const unsigned int fragShaderYellow = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragShaderYellow, 1, &fragShaderSourceYellow, nullptr);
+    glCompileShader(fragShaderYellow);
+
+    glGetShaderiv(fragShaderYellow, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        glGetShaderInfoLog(fragShaderYellow, 512, nullptr, infoLog);
+        std::cerr << "Failed to compile fragment shader" << std::endl << infoLog << std::endl;
+        return -1;
+    }
+
     // A program is the final output linking multiple shaders together
     const unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertShader);
@@ -98,9 +118,26 @@ int main() {
         return -1;
     }
 
+    const unsigned int shaderProgramYellow = glCreateProgram();
+    glAttachShader(shaderProgramYellow, vertShader);
+    glAttachShader(shaderProgramYellow, fragShaderYellow);
+
+    // Linking the program links the output of shaders to the input of the next shader in the program
+    glLinkProgram(shaderProgramYellow);
+
+    glGetProgramiv(shaderProgramYellow, GL_LINK_STATUS, &success);
+
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgramYellow, 512, nullptr, infoLog);
+        std::cerr << "Failed to link shader program" << std::endl << infoLog << std::endl;
+        return -1;
+    }
+
     // Once the program is defined we don't need the shaders anymore
     glDeleteShader(vertShader);
     glDeleteShader(fragShader);
+    glDeleteShader(fragShaderYellow);
 
     // constexpr float vertices[] = {
     //     -0.5f, -0.5f, 0.0f,
@@ -197,6 +234,8 @@ int main() {
         glUseProgram(shaderProgram);
         glBindVertexArray(vao[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glUseProgram(shaderProgramYellow);
         glBindVertexArray(vao[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
