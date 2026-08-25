@@ -8,25 +8,29 @@ void process_input(GLFWwindow* window);
 
 const char* vertexShaderSource = "#version 410 core\n"
     "layout (location = 0) in vec3 pos;\n"
+    "layout (location = 1) in vec3 color;\n"
+    "out vec3 vertexColor;\n"
     "void main()\n"
     "{\n"
     "gl_Position = vec4(pos, 1.0f);\n"
+    "vertexColor = color;\n"
     "}\0";
 
 const char* fragShaderSource = "#version 410 core\n"
+    "in vec3 vertexColor;\n"
     "out vec4 FragColor;\n"
-    "uniform vec4 vertexColor;\n"
     "void main()\n"
     "{\n"
-    "FragColor = vertexColor;\n"
+    "FragColor = vec4(vertexColor, 1.0);\n"
     "}\0";
 
 const char* fragShaderSourceYellow = "#version 410 core\n"
+    "in vec3 vertexColor;\n"
     "out vec4 FragColor;\n"
-    "uniform vec4 vertexColor;\n"
+    "uniform float dTime;\n"
     "void main()\n"
     "{\n"
-    "FragColor = vertexColor;\n"
+    "FragColor = vec4(vertexColor, 1.0) + sin(dTime / 2.0);\n"
     "}\0";
 
 int main() {
@@ -60,6 +64,8 @@ int main() {
         std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    glEnable(GL_FRAMEBUFFER_SRGB);
 
     // Define and compile the vertex and frag shaders
     const unsigned int vertShader = glCreateShader(GL_VERTEX_SHADER);
@@ -148,15 +154,15 @@ int main() {
     // };
 
     constexpr float verts[] = {
-        -0.75f, -0.75f, 0.0f,
-        0.0f, -0.75f, 0.0f,
-        -0.37f, 0.25f, 0.0f,
+        -0.75f, -0.75f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, -0.75f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.37f, 0.25f, 0.0f, 0.0f, 0.0f, 1.0f
     };
 
     constexpr float verts2[] = {
-        0.0f, -0.75f, 0.0f,
-        0.75f, -0.75f, 0.0f,
-        0.37f, 0.25f, 0.0f,
+        0.0f, -0.75f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.75f, -0.75f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.37f, 0.25f, 0.0f, 0.0f, 0.0f, 1.0f
     };
 
     // constexpr float twoVerts[] = {
@@ -205,8 +211,11 @@ int main() {
     // index is 0 from the layout in the vertex shader
     // Since we're tightly packed, the stride is just the size of the 3D coords
     // Lastly enable the vertex attributes which are disabled by default
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void *>(nullptr));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // VAO and VBO are setup, we can unbind to avoid future conflicts
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -216,8 +225,11 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts2), verts2, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void *>(nullptr));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -232,20 +244,15 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        float deltaTime = glfwGetTime();
-        float orange = (sin(deltaTime) / 2.0f) + 0.25f;
-        float yellow = (sin(deltaTime) / 2.0f) + 1.0f;
-        int vertColorLoc = glGetUniformLocation(shaderProgram, "vertexColor");
-        int vertColorLocYellow = glGetUniformLocation(shaderProgramYellow, "vertexColor");
-
         // Use the defined program when rendering geometry
         glUseProgram(shaderProgram);
-        glUniform4f(vertColorLoc, 1.0f, orange, 0.2f, 1.0f);
         glBindVertexArray(vao[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glUseProgram(shaderProgramYellow);
-        glUniform4f(vertColorLocYellow, 1.0f, yellow, 0.0f, 1.0f);
+        float dTime = glfwGetTime();
+        int loc = glGetUniformLocation(shaderProgramYellow, "dTime");
+        glUniform1f(loc, dTime);
         glBindVertexArray(vao[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
