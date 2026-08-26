@@ -26,9 +26,10 @@ const char* fragShaderSource = "#version 410 core\n"
     "in vec2 textCoord;\n"
     "out vec4 FragColor;\n"
     "uniform sampler2D textureSamp;\n"
+    "uniform sampler2D textureSamp2;\n"
     "void main()\n"
     "{\n"
-    "FragColor = texture(textureSamp, textCoord);\n"
+    "FragColor = mix(texture(textureSamp, textCoord), texture(textureSamp2, textCoord), 0.3);\n"
     "}\0";
 
 int main() {
@@ -110,6 +111,12 @@ int main() {
         std::cerr << "Failed to link shader program" << std::endl << infoLog << std::endl;
         return -1;
     }
+
+    // Use the defined program when rendering geometry
+    glUseProgram(shaderProgram);
+    glUniform1i(glGetUniformLocation(shaderProgram, "textureSamp"), 0);
+    glUniform1i(glGetUniformLocation(shaderProgram, "textureSamp2"), 1);
+
     // Once the program is defined we don't need the shaders anymore
     glDeleteShader(vertShader);
     glDeleteShader(fragShader);
@@ -187,29 +194,48 @@ int main() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void *>(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    unsigned int texture[2];
+    glGenTextures(2, texture);
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    int textureWidth, textureHeight, nbrChannels;
-    unsigned char* textureData = stbi_load("assets/container.jpg", &textureWidth, &textureHeight, &nbrChannels, 0);
+    int containerWidth, containerHeight, containerNbrChan;
+    unsigned char* containerTexData = stbi_load("assets/container.jpg", &containerWidth, &containerHeight, &containerNbrChan, 0);
 
-    if (textureData)
+    if (containerTexData)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureWidth, textureHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, containerWidth, containerHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, containerTexData);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
     {
-        std::cerr << "Failed to load texture" << std::endl;
+        std::cerr << "Failed to load container texture" << std::endl;
     }
 
-    stbi_image_free(textureData);
+    stbi_image_free(containerTexData);
+
+    glBindTexture(GL_TEXTURE_2D, texture[1]);
+
+    int faceWidth, faceHeight, faceNbrChan;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* faceTexData = stbi_load("assets/memeface.png", &faceWidth, &faceHeight, &faceNbrChan, 0);
+
+    if (faceTexData)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, faceWidth, faceHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, faceTexData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load face texture" << std::endl;
+    }
+
+    stbi_image_free(faceTexData);
+
 
     // VAO and VBO are setup, we can unbind to avoid future conflicts
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -230,9 +256,10 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Use the defined program when rendering geometry
-        glUseProgram(shaderProgram);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
         glBindVertexArray(vao);
         //glDrawArrays(GL_TRIANGLES, 0, 3);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
