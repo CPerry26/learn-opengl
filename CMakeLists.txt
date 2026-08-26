@@ -20,5 +20,15 @@ FetchContent_MakeAvailable(glfw)
 add_library(glad STATIC external/glad/src/glad.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
+add_library(STB_IMAGE external/stb/stb_image.cpp)
+
 add_executable(learn_opengl main.cpp)
-target_link_libraries(learn_opengl PRIVATE glfw glad)
+target_include_directories(learn_opengl PUBLIC external/stb)
+target_link_libraries(learn_opengl PRIVATE glfw glad STB_IMAGE)
+
+add_custom_command(TARGET learn_opengl POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:learn_opengl>/assets"
+        COMMENT "Copying assets to build directory"
+)
