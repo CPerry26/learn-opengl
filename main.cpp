@@ -8,7 +8,9 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow* window);
 
-const char* vertexShaderSource = "#version 410 core\n"
+int run_1_4_textures(GLFWwindow* window)
+{
+    const char* vertexShaderSource = "#version 410 core\n"
     "layout (location = 0) in vec3 pos;\n"
     "layout (location = 1) in vec3 color;\n"
     "layout (location = 2) in vec2 textureCord;\n"
@@ -21,50 +23,16 @@ const char* vertexShaderSource = "#version 410 core\n"
     "textCoord = textureCord;\n"
     "}\0";
 
-const char* fragShaderSource = "#version 410 core\n"
-    "in vec3 vertexColor;\n"
-    "in vec2 textCoord;\n"
-    "out vec4 FragColor;\n"
-    "uniform sampler2D textureSamp;\n"
-    "uniform sampler2D textureSamp2;\n"
-    "void main()\n"
-    "{\n"
-    "FragColor = mix(texture(textureSamp, textCoord), texture(textureSamp2, textCoord), 0.3);\n"
-    "}\0";
-
-int main() {
-    constexpr int width = 800;
-    constexpr int height = 600;
-
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    // Monitor: Used for full screen mode
-    // Share: Context to share data with
-    GLFWwindow* window = glfwCreateWindow(width, height, "Cody LearnOpenGL", nullptr, nullptr);
-    if (!window)
-    {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-
-    glfwMakeContextCurrent(window);
-
-    // Set the callback for when the window is resized
-    // Called on initial window display
-    // Callbacks must happen after window creation and before rendering
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
-    {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
-
-    //glEnable(GL_FRAMEBUFFER_SRGB);
+    const char* fragShaderSource = "#version 410 core\n"
+        "in vec3 vertexColor;\n"
+        "in vec2 textCoord;\n"
+        "out vec4 FragColor;\n"
+        "uniform sampler2D textureSamp;\n"
+        "uniform sampler2D textureSamp2;\n"
+        "void main()\n"
+        "{\n"
+        "FragColor = mix(texture(textureSamp, textCoord), texture(textureSamp2, textCoord), 0.3);\n"
+        "}\0";
 
     // Define and compile the vertex and frag shaders
     const unsigned int vertShader = glCreateShader(GL_VERTEX_SHADER);
@@ -120,33 +88,6 @@ int main() {
     // Once the program is defined we don't need the shaders anymore
     glDeleteShader(vertShader);
     glDeleteShader(fragShader);
-
-    // constexpr float vertices[] = {
-    //     -0.5f, -0.5f, 0.0f,
-    //     0.5f, -0.5f, 0.0f,
-    //     0.0f, 0.5f, 0.0f,
-    // };
-
-    // constexpr float verts[] = {
-    //     -0.75f, -0.75f, 0.0f, 1.0f, 0.0f, 0.0f,
-    //     0.0f, -0.75f, 0.0f, 0.0f, 1.0f, 0.0f,
-    //     -0.37f, 0.25f, 0.0f, 0.0f, 0.0f, 1.0f
-    // };
-    //
-    // constexpr float verts2[] = {
-    //     0.0f, -0.75f, 0.0f, 1.0f, 0.0f, 0.0f,
-    //     0.75f, -0.75f, 0.0f, 0.0f, 1.0f, 0.0f,
-    //     0.37f, 0.25f, 0.0f, 0.0f, 0.0f, 1.0f
-    // };
-
-    // constexpr float twoVerts[] = {
-    //     -0.75f, -0.75f, 0.0f,
-    //     0.0f, -0.75f, 0.0f,
-    //     -0.37f, 0.25f, 0.0f,
-    //     0.0f, -0.75f, 0.0f,
-    //     0.75f, -0.75f, 0.0f,
-    //     0.37f, 0.25f, 0.0f,
-    // };
 
     constexpr float vertices[] = {
         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
@@ -241,11 +182,6 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // glBindVertexArray(vao[1]);
-    // glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-    //
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(verts2), verts2, GL_STATIC_DRAW);
-
     // Setup render loop
     while (!glfwWindowShouldClose(window))
     {
@@ -261,7 +197,7 @@ int main() {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture[1]);
         glBindVertexArray(vao);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
 
@@ -273,6 +209,45 @@ int main() {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteProgram(shaderProgram);
+
+    return 0;
+}
+
+int main() {
+    constexpr int width = 800;
+    constexpr int height = 600;
+
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    // Monitor: Used for full screen mode
+    // Share: Context to share data with
+    GLFWwindow* window = glfwCreateWindow(width, height, "Cody LearnOpenGL", nullptr, nullptr);
+    if (!window)
+    {
+        std::cerr << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwMakeContextCurrent(window);
+
+    // Set the callback for when the window is resized
+    // Called on initial window display
+    // Callbacks must happen after window creation and before rendering
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
+    {
+        std::cerr << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
+
+    //glEnable(GL_FRAMEBUFFER_SRGB);
+
+    run_1_4_textures(window);
 
     glfwTerminate();
 
