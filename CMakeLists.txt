@@ -22,7 +22,10 @@ target_include_directories(glad PUBLIC external/glad/include)
 
 add_library(STB_IMAGE external/stb/stb_image.cpp)
 
-add_executable(learn_opengl main.cpp)
+add_executable(learn_opengl main.cpp
+        include/shader.h
+        src/shader.cpp
+)
 target_include_directories(learn_opengl PUBLIC external/stb)
 target_link_libraries(learn_opengl PRIVATE glfw glad STB_IMAGE)
 
