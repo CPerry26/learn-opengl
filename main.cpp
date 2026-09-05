@@ -74,6 +74,10 @@ int run_1_4_textures(GLFWwindow* window)
     // Linking the program links the output of shaders to the input of the next shader in the program
     glLinkProgram(shaderProgram);
 
+    // Once the program is defined we don't need the shaders anymore
+    glDeleteShader(vertShader);
+    glDeleteShader(fragShader);
+
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
 
     if (!success)
@@ -88,11 +92,8 @@ int run_1_4_textures(GLFWwindow* window)
     glUniform1i(glGetUniformLocation(shaderProgram, "textureSamp"), 0);
     glUniform1i(glGetUniformLocation(shaderProgram, "textureSamp2"), 1);
 
-    // Once the program is defined we don't need the shaders anymore
-    glDeleteShader(vertShader);
-    glDeleteShader(fragShader);
-
     constexpr float vertices[] = {
+        // x,y,z             // rgb              // tex coord
         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
@@ -211,6 +212,197 @@ int run_1_4_textures(GLFWwindow* window)
 
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+    glDeleteProgram(shaderProgram);
+
+    return 0;
+}
+
+int run_1_5_transformation(GLFWwindow* window)
+{
+    const char* vertexShaderSource = "#version 410 core\n"
+    "layout (location = 0) in vec3 pos;\n"
+    "layout (location = 1) in vec3 color;\n"
+    "layout (location = 2) in vec2 textureCord;\n"
+    "out vec3 vertexColor;\n"
+    "out vec2 textCoord;\n"
+    "uniform mat4 transform;\n"
+    "void main()\n"
+    "{\n"
+    "gl_Position = transform * vec4(pos, 1.0f);\n"
+    "vertexColor = color;\n"
+    "textCoord = textureCord;\n"
+    "}\0";
+
+    const char* fragShaderSource = "#version 410 core\n"
+        "in vec3 vertexColor;\n"
+        "in vec2 textCoord;\n"
+        "out vec4 FragColor;\n"
+        "uniform sampler2D textureSamp;\n"
+        "uniform sampler2D textureSamp2;\n"
+        "void main()\n"
+        "{\n"
+        "FragColor = mix(texture(textureSamp, textCoord), texture(textureSamp2, textCoord), 0.3);\n"
+        "}\0";
+
+    const unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+    glCompileShader(vertexShader);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        glGetShaderInfoLog(GL_VERTEX_SHADER, 512, nullptr, infoLog);
+        std::cerr << "Failed to compile vertex shader" << std::endl << infoLog << std::endl;
+        return -1;
+    }
+
+    const unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragShaderSource, nullptr);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+        std::cerr << "Failed to compile fragment shader" << std::endl << infoLog << std::endl;
+        return -1;
+    }
+
+    const unsigned int shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    glLinkProgram(shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        std::cerr << "Failed to link shader program" << std::endl << infoLog << std::endl;
+        return -1;
+    }
+
+    glUseProgram(shaderProgram);
+    glUniform1i(glGetUniformLocation(shaderProgram, "textureSamp"), 0);
+    glUniform1i(glGetUniformLocation(shaderProgram, "textureSamp2"), 1);
+
+    constexpr float vertices[] = {
+        // x,y,z             // rgb              // tex coord
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+       -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left
+    };
+
+    const unsigned int indices[] = {
+        0, 1, 3,
+        1, 2, 3
+    };
+
+    unsigned int vao, vbo, ebo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
+
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void *>(nullptr));
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void *>(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    unsigned int texture[2];
+    glGenTextures(2, texture);
+    glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int containerWidth, containerHeight, containerNbrChan;
+    unsigned char* containerTexData = stbi_load("assets/container.jpg", &containerWidth, &containerHeight, &containerNbrChan, 0);
+
+    if (containerTexData)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, containerWidth, containerHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, containerTexData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load container texture" << std::endl;
+    }
+
+    stbi_image_free(containerTexData);
+
+    glBindTexture(GL_TEXTURE_2D, texture[1]);
+
+    int faceWidth, faceHeight, faceNbrChan;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* faceTexData = stbi_load("assets/memeface.png", &faceWidth, &faceHeight, &faceNbrChan, 0);
+
+    if (faceTexData)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, faceWidth, faceHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, faceTexData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load memeface texture" << std::endl;
+    }
+
+    stbi_image_free(faceTexData);
+
+    while (!glfwWindowShouldClose(window))
+    {
+        // Process input
+        process_input(window);
+
+        // Render logic
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
+        glBindVertexArray(vao);
+
+        glm::mat4 transform = glm::mat4(1.0f);
+        transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
+        transform = glm::rotate(transform, (float) glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        const unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glBindVertexArray(0);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
     glDeleteProgram(shaderProgram);
 
     return 0;
@@ -250,8 +442,10 @@ int main() {
 
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
-    run_1_4_textures(window);
+    //run_1_4_textures(window);
+    run_1_5_transformation(window);
 
+    glfwDestroyWindow(window);
     glfwTerminate();
 
     return 0;
